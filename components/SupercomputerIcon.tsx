@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
 import { SupercomputerIconProps } from '../types';
-import { DigitalRainAnimation } from './DigitalRainAnimation';
 
 const Container = styled.div`
   width: 120px;
@@ -163,7 +162,6 @@ export function SupercomputerIcon({
 
   return (
     <Container onClick={onClick}>
-      <DigitalRainAnimation isProcessing={isCurrentlyProcessing} />
       <Computer3DContainer $flipped={flipped}>
         <Computer3D $flipped={flipped}>
           <ComputerFront>
