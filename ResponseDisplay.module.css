@@ -1,0 +1,74 @@
+.responseContainer {
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: visible !important;
+  max-height: none !important;
+  height: auto !important;
+}
+
+.teamHeader {
+  color: rgba(255, 255, 255, 0.87) !important;
+  font-size: 1.2rem !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.responseText {
+  color: rgba(255, 255, 255, 0.87) !important;
+  font-size: 16px !important;
+  line-height: 1.1 !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace !important;
+  white-space: pre-wrap !important;
+  word-break: break-word !important;
+  margin: 0 !important;
+  padding: 8px !important;
+  border: 1px solid rgba(128, 128, 128, 0.2) !important;
+  border-radius: 8px !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+  max-height: none !important;
+  height: auto !important;
+}
+
+/* Specific override for model name spacing */
+.responseText > p:first-child,
+.responseText > div:first-child {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+
+/* Reset all child elements */
+.responseText > * {
+  margin: 0 !important;
+  padding: 0 !important;
+  line-height: 1.1 !important;
+}
+
+/* Ensure the response container can expand */
+.responseContainer {
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: visible !important;
+  max-height: none !important;
+  height: auto !important;
+  min-height: auto !important;
+}
+
+/* Ensure the main response area can expand */
+.responseText {
+  color: rgba(255, 255, 255, 0.87) !important;
+  font-size: 16px !important;
+  line-height: 1.1 !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace !important;
+  white-space: pre-wrap !important;
+  word-break: break-word !important;
+  margin: 0 !important;
+  padding: 8px !important;
+  border: 1px solid rgba(128, 128, 128, 0.2) !important;
+  border-radius: 8px !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+  max-height: none !important;
+  height: auto !important;
+  min-height: auto !important;
+} 
