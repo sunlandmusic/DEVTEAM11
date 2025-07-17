@@ -593,7 +593,9 @@ const App: React.FC = () => {
   };
 
   const handleAddAttachment = (e: React.ChangeEvent<HTMLInputElement>) => {
+    console.log('🔍 handleAddAttachment called', e.target.files);
     if (e.target.files && e.target.files.length > 0) {
+      console.log('📁 Files selected:', Array.from(e.target.files).map(f => f.name));
       setTaskAttachments(prev => [...prev, ...Array.from(e.target.files!)]);
       // Clear the input value to allow the same file to be selected again
       e.target.value = '';
@@ -1085,7 +1087,29 @@ const App: React.FC = () => {
                                 onChange={handleAddAttachment}
                               />
                               <AttachmentButton
-                                onClick={() => taskAttachmentInputRef.current?.click()}
+                                onClick={() => {
+                                  console.log('🔍 Attachment button clicked, ref:', taskAttachmentInputRef.current);
+                                  if (taskAttachmentInputRef.current) {
+                                    taskAttachmentInputRef.current.click();
+                                  } else {
+                                    console.error('❌ Ref is null, trying fallback method');
+                                    // Fallback: create a temporary input
+                                    const tempInput = document.createElement('input');
+                                    tempInput.type = 'file';
+                                    tempInput.multiple = true;
+                                    tempInput.style.display = 'none';
+                                    tempInput.onchange = (e) => {
+                                      const target = e.target as HTMLInputElement;
+                                      if (target.files && target.files.length > 0) {
+                                        console.log('📁 Fallback files selected:', Array.from(target.files).map(f => f.name));
+                                        setTaskAttachments(prev => [...prev, ...Array.from(target.files!)]);
+                                      }
+                                      document.body.removeChild(tempInput);
+                                    };
+                                    document.body.appendChild(tempInput);
+                                    tempInput.click();
+                                  }
+                                }}
                               >
                                 + Add Attachment
                               </AttachmentButton>
