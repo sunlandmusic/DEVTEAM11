@@ -596,7 +596,11 @@ const App: React.FC = () => {
     console.log('🔍 handleAddAttachment called', e.target.files);
     if (e.target.files && e.target.files.length > 0) {
       console.log('📁 Files selected:', Array.from(e.target.files).map(f => f.name));
-      setTaskAttachments(prev => [...prev, ...Array.from(e.target.files!)]);
+      setTaskAttachments(prev => {
+        const newAttachments = [...prev, ...Array.from(e.target.files!)];
+        console.log('📋 Updated taskAttachments:', newAttachments.map(f => f.name));
+        return newAttachments;
+      });
       // Clear the input value to allow the same file to be selected again
       e.target.value = '';
       // Also ensure the ref is properly reset
@@ -793,6 +797,11 @@ const App: React.FC = () => {
       setDevTeamSelectedTeams([1]);
     }
   }, [devTeamPrompt, devTeamIsTaskMode, devTeamSelectedTeams.length, setDevTeamSelectedTeams]);
+
+  // Debug: Monitor taskAttachments state changes
+  useEffect(() => {
+    console.log('🔄 taskAttachments state changed:', taskAttachments.map(f => f.name));
+  }, [taskAttachments]);
 
   // Calculate if the Send button should be enabled and if we're in processing mode
   const hasTeamsToProcess = devTeamSelectedTeams.some(teamId => !processingStatus.processingTeams.includes(teamId));
