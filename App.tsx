@@ -507,7 +507,7 @@ const App: React.FC = () => {
   const [showDevTeamTooltip, setShowDevTeamTooltip] = useState(false);
   const [currentPage, setCurrentPage] = useState<'preparation' | 'devteam' | 'cleaner'>('devteam');
   // Add state for three modes
-  const [devTeamModelMode, setDevTeamModelMode] = useState<'economy' | 'pro' | 'premium'>('economy');
+  const [devTeamModelMode, setDevTeamModelMode] = useState<'options' | 'pro' | 'max'>('options');
   const [flipTrigger, setFlipTrigger] = useState(0);
 
   // --- Aggregated Action Handlers ---
@@ -866,7 +866,11 @@ const App: React.FC = () => {
                         mode={devTeamModelMode}
                         triggerFlip={flipTrigger}
                         modelLabels={
-                          devTeamModelMode === 'economy' ? ['Deep', 'Seek', 'R1'] :
+                          devTeamModelMode === 'options' ? 
+                            id === 1 ? ['Deep', 'Seek', 'R1'] :
+                            id === 2 ? ['Claude', 'Opus 4'] :
+                            id === 3 ? ['Grok 4'] :
+                            ['Gemini', '2.5 Pro'] :
                           devTeamModelMode === 'pro' ? ['Claude', 'Opus 4', 'Grok 4'] :
                           ['Gemini', '2.5 Pro', 'Opus 4', 'Deep', 'Seek R1', 'Grok 4']
                         }
@@ -884,11 +888,11 @@ const App: React.FC = () => {
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', margin: '18px 0 0 0', minHeight: 40 }}>
                   <div style={{ display: 'flex', gap: '8px' }}>
                     <button
-                      onClick={() => { setDevTeamModelMode('economy'); setFlipTrigger(f => f + 1); }}
+                      onClick={() => { setDevTeamModelMode('options'); setFlipTrigger(f => f + 1); }}
                       style={{
                         padding: '8px 16px',
-                        background: devTeamModelMode === 'economy' ? '#444' : 'transparent',
-                        color: devTeamModelMode === 'economy' ? '#fff' : '#666',
+                        background: devTeamModelMode === 'options' ? '#444' : 'transparent',
+                        color: devTeamModelMode === 'options' ? '#fff' : '#666',
                         border: '1px solid #444',
                         borderRadius: '11px',
                         cursor: 'pointer',
@@ -897,19 +901,19 @@ const App: React.FC = () => {
                         fontWeight: '500'
                       }}
                       onMouseEnter={(e) => {
-                        if (devTeamModelMode !== 'economy') {
+                        if (devTeamModelMode !== 'options') {
                           e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
                           e.currentTarget.style.color = '#aaa';
                         }
                       }}
                       onMouseLeave={(e) => {
-                        if (devTeamModelMode !== 'economy') {
+                        if (devTeamModelMode !== 'options') {
                           e.currentTarget.style.background = 'transparent';
                           e.currentTarget.style.color = '#666';
                         }
                       }}
                     >
-                      ECO
+                      OPTIONS
                     </button>
                     <button
                       onClick={() => { setDevTeamModelMode('pro'); setFlipTrigger(f => f + 1); }}
@@ -940,11 +944,11 @@ const App: React.FC = () => {
                       PRO
                     </button>
                     <button
-                      onClick={() => { setDevTeamModelMode('premium'); setFlipTrigger(f => f + 1); }}
+                      onClick={() => { setDevTeamModelMode('max'); setFlipTrigger(f => f + 1); }}
                       style={{
                         padding: '8px 16px',
-                        background: devTeamModelMode === 'premium' ? '#444' : 'transparent',
-                        color: devTeamModelMode === 'premium' ? '#fff' : '#666',
+                        background: devTeamModelMode === 'max' ? '#444' : 'transparent',
+                        color: devTeamModelMode === 'max' ? '#fff' : '#666',
                         border: '1px solid #444',
                         borderRadius: '11px',
                         cursor: 'pointer',
@@ -953,19 +957,19 @@ const App: React.FC = () => {
                         fontWeight: '500'
                       }}
                       onMouseEnter={(e) => {
-                        if (devTeamModelMode !== 'premium') {
+                        if (devTeamModelMode !== 'max') {
                           e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
                           e.currentTarget.style.color = '#aaa';
                         }
                       }}
                       onMouseLeave={(e) => {
-                        if (devTeamModelMode !== 'premium') {
+                        if (devTeamModelMode !== 'max') {
                           e.currentTarget.style.background = 'transparent';
                           e.currentTarget.style.color = '#666';
                         }
                       }}
                     >
-                      PREMIUM
+                      MAX
                     </button>
                   </div>
                 </div>
