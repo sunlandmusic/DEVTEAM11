@@ -646,6 +646,11 @@ const App: React.FC = () => {
         team: taskTeam
       } : t));
       setEditTaskIndex(null);
+      // Only clear after successful edit
+      setTaskPrompt('');
+      console.log('🧹 Clearing taskAttachments after successful edit');
+      // TEMPORARILY COMMENTED OUT TO DEBUG: setTaskAttachments([]);
+      setTaskTeam(null);
     } else {
       setTaskQueue(prev => [
         ...prev,
@@ -657,11 +662,12 @@ const App: React.FC = () => {
       ]);
       // Auto-select the team for this task
       setDevTeamSelectedTeams(devTeamSelectedTeams.includes(taskTeam) ? devTeamSelectedTeams : [...devTeamSelectedTeams, taskTeam]);
+      // Only clear after successful add
+      setTaskPrompt('');
+      console.log('🧹 Clearing taskAttachments after successful add');
+      // TEMPORARILY COMMENTED OUT TO DEBUG: setTaskAttachments([]);
+      setTaskTeam(null);
     }
-    setTaskPrompt('');
-    console.log('🧹 Clearing taskAttachments in handleAddTask');
-    setTaskAttachments([]);
-    setTaskTeam(null);
   };
 
   const handleRemoveTask = (idx: number) => {
