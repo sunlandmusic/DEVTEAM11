@@ -122,6 +122,7 @@ export function Toolbar({
     { label: 'Build an Expert', value: 'I want to build a custom A.I. model. It should be able to:\n\n... please help me answer these questions about the model :\n3. Name ?\n4. Description ?\n5. Instructions ?' },
     { label: 'Data Sets', value: 'please help me collect data sets, to build a knowledge base for my attached file/s\n1. make a list of data we need to research, collect and compile.\n2. then break the data acquisition process into stages.' },
     { label: 'Double Check', value: 'My attached file/s act as a knowledge base for my custom A.I. model. please look over the document/s and let me know if it has all the data needed for the model to be highly effective and extremely helpful - please advise.\nIf more data is needed, make a list of specific data needed to fill the gaps. and then make a list of the data acquisition broken up into stages' },
+    { label: 'Collect Data', value: 'please read my attached document. please research, collect data and create data sets for STAGE 1 (mentioned in the document)' },
   ];
 
   return (
