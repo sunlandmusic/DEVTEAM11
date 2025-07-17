@@ -623,7 +623,12 @@ const App: React.FC = () => {
   };
 
   const handleAddTask = () => {
-    if (!taskPrompt.trim() || !taskTeam) return;
+    console.log('🔍 handleAddTask called with:', { taskPrompt: taskPrompt.trim(), taskTeam, taskAttachmentsCount: taskAttachments.length });
+    
+    if (!taskPrompt.trim() || !taskTeam) {
+      console.log('❌ handleAddTask returning early - missing prompt or team');
+      return;
+    }
     
     // Check if adding this task would exceed 2 stages (8 tasks)
     if (editTaskIndex === null && taskQueue.length >= 8) {
@@ -1150,7 +1155,10 @@ const App: React.FC = () => {
                             </TeamSelectContainer>
                           </div>
                         </div>
-                        <AddTaskButton onClick={handleAddTask}>
+                        <AddTaskButton onClick={() => {
+                          console.log('🔘 Add Task button clicked');
+                          handleAddTask();
+                        }}>
                           {editTaskIndex !== null ? 'Save Task' : 'Add Task'}
                         </AddTaskButton>
                       </div>
