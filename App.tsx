@@ -596,6 +596,7 @@ const App: React.FC = () => {
     console.log('🔍 handleAddAttachment called', e.target.files);
     if (e.target.files && e.target.files.length > 0) {
       console.log('📁 Files selected:', Array.from(e.target.files).map(f => f.name));
+      console.log('📋 Current taskAttachments before update:', taskAttachments.map(f => f.name));
       setTaskAttachments(prev => {
         const newAttachments = [...prev, ...Array.from(e.target.files!)];
         console.log('📋 Updated taskAttachments:', newAttachments.map(f => f.name));
@@ -615,6 +616,7 @@ const App: React.FC = () => {
   };
 
   const handleEditTask = (idx: number) => {
+    console.log('🔍 handleEditTask called with idx:', idx);
     const task = taskQueue[idx];
     setTaskPrompt(task.prompt);
     setTaskAttachments(task.attachments);
@@ -624,6 +626,7 @@ const App: React.FC = () => {
 
   const handleAddTask = () => {
     console.log('🔍 handleAddTask called with:', { taskPrompt: taskPrompt.trim(), taskTeam, taskAttachmentsCount: taskAttachments.length });
+    console.log('🔍 handleAddTask stack trace:', new Error().stack);
     
     if (!taskPrompt.trim() || !taskTeam) {
       console.log('❌ handleAddTask returning early - missing prompt or team');
