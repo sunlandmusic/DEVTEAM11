@@ -687,23 +687,20 @@ const App: React.FC = () => {
       setDevTeamProcessing(true);
       try {
         if (devTeamIsTaskMode && taskQueue.length > 0) {
-          // Multi-Task mode: process tasks with 4-second staggered delays
+          // Multi-Task mode: process all tasks simultaneously
           const timestamp = new Date().toISOString();
           const TIMEOUT_MS = 2 * 60 * 1000; // 2 minutes
-          const STAGGER_DELAY_MS = 4000; // 4 seconds between task starts
           
-          const results: TeamResponse[] = [];
+          console.log('🚀 Starting simultaneous processing of', taskQueue.length, 'tasks');
           
-          for (let i = 0; i < taskQueue.length; i++) {
-            const task = taskQueue[i];
-            
-            // Start processing for this team
+          // Start all teams processing immediately
+          taskQueue.forEach(task => {
             startTeamProcessing(task.team);
-            
-            // Add delay between task starts (except for the first task)
-            if (i > 0) {
-              await new Promise(resolve => setTimeout(resolve, STAGGER_DELAY_MS));
-            }
+          });
+          
+          // Process all tasks simultaneously using Promise.all
+          const taskPromises = taskQueue.map(async (task, index) => {
+            console.log(`🔄 Starting task ${index + 1}/${taskQueue.length} for Team ${task.team}`);
             
             let timedOut = false;
             const timeoutPromise = new Promise((_, reject) =>
@@ -725,26 +722,36 @@ const App: React.FC = () => {
               ]) as string;
               
               addCompletedTeam(task.team);
-              results.push({
+              console.log(`✅ Task ${index + 1} completed for Team ${task.team}`);
+              
+              return {
                 teamId: task.team,
                 prompt: task.prompt,
                 response,
                 timestamp,
                 attachments: (task.attachments || []).map((att: any) => att.url).filter(Boolean)
-              });
-    } catch (error) {
+              };
+            } catch (error) {
               addError(task.team, error as Error);
-              results.push({
+              console.log(`❌ Task ${index + 1} failed for Team ${task.team}:`, error);
+              
+              return {
                 teamId: task.team,
                 prompt: task.prompt,
                 response: timedOut ? 'Error: Timed out after 2 minutes.' : `Error: ${String(error)}`,
                 timestamp,
                 attachments: (task.attachments || []).map((att: any) => att.url).filter(Boolean)
-              });
+              };
             }
-          }
+          });
           
-          setDevTeamResponses(results);
+          try {
+            const results = await Promise.all(taskPromises);
+            console.log('🎉 All tasks completed:', results.length);
+            setDevTeamResponses(results);
+          } catch (error) {
+            console.error('❌ Error in task processing:', error);
+          }
       } else {
           // Regular processing
           if (devTeamSelectedTeams.length === 0) return;
@@ -1081,6 +1088,7 @@ const App: React.FC = () => {
                         hasTasks={taskQueue.length > 0}
                         isProcessing={devTeamProcessing}
                         setDevTeamPrompt={setDevTeamPrompt}
+                        setTaskPrompt={setTaskPrompt} // <-- Add this line
                       />
                     </div>
                   </InputContainer>

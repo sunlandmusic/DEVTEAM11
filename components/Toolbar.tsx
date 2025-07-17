@@ -90,6 +90,7 @@ interface ToolbarProps {
   hasTasks: boolean;
   isProcessing: boolean;
   setDevTeamPrompt: (prompt: string) => void;
+  setTaskPrompt?: (prompt: string) => void; // <-- Add this line
 }
 
 export function Toolbar({ 
@@ -100,7 +101,8 @@ export function Toolbar({
   onStop,
   hasTasks,
   isProcessing,
-  setDevTeamPrompt
+  setDevTeamPrompt,
+  setTaskPrompt // <-- Add this line
 }: ToolbarProps) {
   const openRouterService = OpenRouterService();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -205,8 +207,15 @@ export function Toolbar({
                 }}
                 onClick={() => {
                   setShowPromptDropdown(false);
-                  // Directly update the prompt state
-                  setDevTeamPrompt(opt.value);
+                  console.log('🔍 Prompt button clicked:', { isTaskMode, hasSetTaskPrompt: !!setTaskPrompt, promptValue: opt.value });
+                  // Only update the correct prompt field
+                  if (isTaskMode && setTaskPrompt) {
+                    console.log('📝 Setting task prompt:', opt.value);
+                    setTaskPrompt(opt.value);
+                  } else {
+                    console.log('📝 Setting dev team prompt:', opt.value);
+                    setDevTeamPrompt(opt.value);
+                  }
                   // Auto-select Team 1 when prompt is selected
                   setDevTeamSelectedTeams([1]);
                 }}
