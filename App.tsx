@@ -651,6 +651,7 @@ const App: React.FC = () => {
       setDevTeamSelectedTeams(devTeamSelectedTeams.includes(taskTeam) ? devTeamSelectedTeams : [...devTeamSelectedTeams, taskTeam]);
     }
     setTaskPrompt('');
+    console.log('🧹 Clearing taskAttachments in handleAddTask');
     setTaskAttachments([]);
     setTaskTeam(null);
   };
