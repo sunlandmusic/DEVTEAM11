@@ -1082,12 +1082,24 @@ const App: React.FC = () => {
                       alignItems: 'flex-start',
                       justifyContent: 'space-between',
                     }}>
-                      <div style={{ flex: 1, maxWidth: 400, background: 'rgba(51,51,51,0.8)', borderRadius: 12, padding: 24, marginRight: 24 }}>
+                      <div 
+                        style={{ flex: 1, maxWidth: 400, background: 'rgba(51,51,51,0.8)', borderRadius: 12, padding: 24, marginRight: 24 }}
+                        onSubmit={(e) => e.preventDefault()}
+                      >
                         <h3 style={{ color: 'white', marginBottom: 16 }}>Add Task</h3>
                         <TaskInputContainer>
                           <TaskPromptInput
                             value={taskPrompt}
                             onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setTaskPrompt(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' && e.ctrlKey) {
+                                // Allow Ctrl+Enter to submit
+                                handleAddTask();
+                              } else if (e.key === 'Enter') {
+                                // Prevent Enter from submitting
+                                e.preventDefault();
+                              }
+                            }}
                             placeholder="Task prompt"
                           />
                         </TaskInputContainer>
@@ -1155,10 +1167,13 @@ const App: React.FC = () => {
                             </TeamSelectContainer>
                           </div>
                         </div>
-                        <AddTaskButton onClick={() => {
-                          console.log('🔘 Add Task button clicked');
-                          handleAddTask();
-                        }}>
+                        <AddTaskButton 
+                          type="button"
+                          onClick={() => {
+                            console.log('🔘 Add Task button clicked');
+                            handleAddTask();
+                          }}
+                        >
                           {editTaskIndex !== null ? 'Save Task' : 'Add Task'}
                         </AddTaskButton>
                       </div>
