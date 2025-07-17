@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import './App.css';
 import { SupercomputerIcon } from './components/SupercomputerIcon';
 import { SlotAnimation } from './components/SlotAnimation';
@@ -515,6 +515,8 @@ const App: React.FC = () => {
   const [flipTrigger, setFlipTrigger] = useState(0);
   // Export dialog state
   const [showExportDialog, setShowExportDialog] = useState(false);
+  // Add ref for task attachment input
+  const taskAttachmentInputRef = useRef<HTMLInputElement>(null);
 
   // --- Aggregated Action Handlers ---
   const handleCopyAllResponses = async () => {
@@ -595,6 +597,10 @@ const App: React.FC = () => {
       setTaskAttachments(prev => [...prev, ...Array.from(e.target.files!)]);
       // Clear the input value to allow the same file to be selected again
       e.target.value = '';
+      // Also ensure the ref is properly reset
+      if (taskAttachmentInputRef.current) {
+        taskAttachmentInputRef.current.value = '';
+      }
     }
   };
 
@@ -1072,14 +1078,14 @@ const App: React.FC = () => {
                           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
                             <div style={{ flex: 1 }}>
                               <input
-                                id="task-attachment-input"
+                                ref={taskAttachmentInputRef}
                                 type="file"
                                 multiple
                                 style={{ display: 'none' }}
                                 onChange={handleAddAttachment}
                               />
                               <AttachmentButton
-                                onClick={() => document.getElementById('task-attachment-input')?.click()}
+                                onClick={() => taskAttachmentInputRef.current?.click()}
                               >
                                 + Add Attachment
                               </AttachmentButton>
