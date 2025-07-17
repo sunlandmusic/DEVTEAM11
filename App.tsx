@@ -595,13 +595,16 @@ const App: React.FC = () => {
   const handleAddAttachment = (e: React.ChangeEvent<HTMLInputElement>) => {
     console.log('🔍 handleAddAttachment called', e.target.files);
     if (e.target.files && e.target.files.length > 0) {
-      console.log('📁 Files selected:', Array.from(e.target.files).map(f => f.name));
+      const selectedFiles = Array.from(e.target.files);
+      console.log('📁 Files selected:', selectedFiles.map(f => f.name));
       console.log('📋 Current taskAttachments before update:', taskAttachments.map(f => f.name));
-      setTaskAttachments(prev => {
-        const newAttachments = [...prev, ...Array.from(e.target.files!)];
-        console.log('📋 Updated taskAttachments:', newAttachments.map(f => f.name));
-        return newAttachments;
-      });
+      
+      // Use a more explicit state update
+      const newAttachments = [...taskAttachments, ...selectedFiles];
+      console.log('📋 New attachments array:', newAttachments.map(f => f.name));
+      
+      setTaskAttachments(newAttachments);
+      
       // Clear the input value to allow the same file to be selected again
       e.target.value = '';
       // Also ensure the ref is properly reset
@@ -1137,8 +1140,11 @@ const App: React.FC = () => {
                                     tempInput.onchange = (e) => {
                                       const target = e.target as HTMLInputElement;
                                       if (target.files && target.files.length > 0) {
-                                        console.log('📁 Fallback files selected:', Array.from(target.files).map(f => f.name));
-                                        setTaskAttachments(prev => [...prev, ...Array.from(target.files!)]);
+                                        const selectedFiles = Array.from(target.files);
+                                        console.log('📁 Fallback files selected:', selectedFiles.map(f => f.name));
+                                        const newAttachments = [...taskAttachments, ...selectedFiles];
+                                        console.log('📋 Fallback new attachments array:', newAttachments.map(f => f.name));
+                                        setTaskAttachments(newAttachments);
                                       }
                                       document.body.removeChild(tempInput);
                                     };
