@@ -590,6 +590,8 @@ const App: React.FC = () => {
   const handleAddAttachment = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       setTaskAttachments(prev => [...prev, ...Array.from(e.target.files!)]);
+      // Clear the input value to allow the same file to be selected again
+      e.target.value = '';
     }
   };
 
