@@ -6,7 +6,7 @@ import { DigitalRainAnimation } from './components/DigitalRainAnimation';
 import { DogonMask } from './components/DogonMask';
 import { Toolbar } from './components/Toolbar';
 import { TextInputArea } from './components/TextInputArea';
-import { FileList } from './components/FileList';
+
 import { OpenRouterService } from './services/OpenRouterService';
 import { useAutomationStore } from './services/store';
 import { TeamResponse, AppState, TeamId } from './types';
@@ -465,6 +465,9 @@ const App: React.FC = () => {
   const [taskQueue, setTaskQueue] = useState<any[]>([]);
   const { 
     attachments, 
+    addAttachment,
+    updateAttachment,
+    removeAttachment,
     processingStatus, 
     startTeamProcessing, 
     stopTeamProcessing, 
@@ -1031,7 +1034,7 @@ const App: React.FC = () => {
                       />
                     </div>
                     <div style={{ margin: 0, padding: 0, width: '100%' }}>
-                      <FileList />
+                      <FileAttachments />
                     </div>
                     <div style={{ margin: 0, padding: 0, width: '100%' }}>
                       <Toolbar
