@@ -24,7 +24,7 @@ export interface SupercomputerIconProps {
   onClick: () => void;
   isSelected: boolean;
   isCurrentlyProcessing: boolean;
-  mode?: 'options' | 'pro' | 'max';
+  mode?: 'eco' | 'options' | 'pro' | 'max';
   triggerFlip?: number;
   modelLabels?: string[];
 }

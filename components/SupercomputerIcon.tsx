@@ -96,7 +96,7 @@ const ComputerBack = styled.div`
   z-index: 3;
 `;
 
-const ModelLabel = styled.div<{ $mode: 'options' | 'pro' | 'max' }>`
+const ModelLabel = styled.div<{ $mode: 'eco' | 'options' | 'pro' | 'max' }>`
   position: absolute;
   color: #111;
   font-size: 1.1rem;
@@ -105,6 +105,7 @@ const ModelLabel = styled.div<{ $mode: 'options' | 'pro' | 'max' }>`
   white-space: pre-line;
   margin-top: ${props => props.$mode === 'max' ? '1px' : '12px'};
   margin-left: ${props => 
+    props.$mode === 'eco' ? '29px' :
     props.$mode === 'options' ? '29px' : 
     props.$mode === 'pro' ? '37px' : 
     '30px'
@@ -117,10 +118,10 @@ export function SupercomputerIcon({
   onClick,
   isSelected = false,
   isCurrentlyProcessing = false,
-  mode = 'options',
+  mode = 'eco',
   triggerFlip = 0,
   modelLabels = [],
-}: SupercomputerIconProps & { mode?: 'options' | 'pro' | 'max', triggerFlip?: number, modelLabels?: string[] }) {
+}: SupercomputerIconProps & { mode?: 'eco' | 'options' | 'pro' | 'max', triggerFlip?: number, modelLabels?: string[] }) {
   const [flipped, setFlipped] = useState(false);
 
   useEffect(() => {

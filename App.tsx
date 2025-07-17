@@ -507,8 +507,8 @@ const App: React.FC = () => {
   const [copied, setCopied] = useState(false);
   const [showDevTeamTooltip, setShowDevTeamTooltip] = useState(false);
   const [currentPage, setCurrentPage] = useState<'preparation' | 'devteam' | 'cleaner'>('devteam');
-  // Add state for three modes
-  const [devTeamModelMode, setDevTeamModelMode] = useState<'options' | 'pro' | 'max'>('options');
+  // Add state for four modes
+  const [devTeamModelMode, setDevTeamModelMode] = useState<'eco' | 'options' | 'pro' | 'max'>('eco');
   const [flipTrigger, setFlipTrigger] = useState(0);
   // Export dialog state
   const [showExportDialog, setShowExportDialog] = useState(false);
@@ -881,6 +881,7 @@ const App: React.FC = () => {
                         mode={devTeamModelMode}
                         triggerFlip={flipTrigger}
                         modelLabels={
+                          devTeamModelMode === 'eco' ? ['Deep', 'Seek', 'R1'] :
                           devTeamModelMode === 'options' ? 
                             id === 1 ? ['Deep', 'Seek', 'R1'] :
                             id === 2 ? ['Claude', 'Opus 4'] :
@@ -902,6 +903,34 @@ const App: React.FC = () => {
 
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', margin: '18px 0 0 0', minHeight: 40 }}>
                   <div style={{ display: 'flex', gap: '8px' }}>
+                    <button
+                      onClick={() => { setDevTeamModelMode('eco'); setFlipTrigger(f => f + 1); }}
+                      style={{
+                        padding: '8px 16px',
+                        background: devTeamModelMode === 'eco' ? '#444' : 'transparent',
+                        color: devTeamModelMode === 'eco' ? '#fff' : '#666',
+                        border: '1px solid #444',
+                        borderRadius: '11px',
+                        cursor: 'pointer',
+                        transition: 'all 0.3s ease',
+                        fontSize: '0.875rem',
+                        fontWeight: '500'
+                      }}
+                      onMouseEnter={(e) => {
+                        if (devTeamModelMode !== 'eco') {
+                          e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+                          e.currentTarget.style.color = '#aaa';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (devTeamModelMode !== 'eco') {
+                          e.currentTarget.style.background = 'transparent';
+                          e.currentTarget.style.color = '#666';
+                        }
+                      }}
+                    >
+                      ECO
+                    </button>
                     <button
                       onClick={() => { setDevTeamModelMode('options'); setFlipTrigger(f => f + 1); }}
                       style={{

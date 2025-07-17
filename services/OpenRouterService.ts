@@ -79,7 +79,7 @@ export const OpenRouterService = () => {
     fetchCredits();
   }, []);
 
-  const processTeamRequest = async (prompt: string, teamId: TeamId, attachments: FileAttachment[] = [], mode: 'options' | 'pro' | 'max' = 'max') => {
+  const processTeamRequest = async (prompt: string, teamId: TeamId, attachments: FileAttachment[] = [], mode: 'eco' | 'options' | 'pro' | 'max' = 'max') => {
     console.log('🚀 Starting API request:', { prompt, teamId, mode, attachmentsCount: attachments.length });
     console.log('📎 Attachments details:', attachments.map(att => ({ name: att.name, status: att.status, hasContent: !!att.content, contentLength: att.content?.length || 0 })));
     
@@ -92,12 +92,15 @@ export const OpenRouterService = () => {
     ] : mode === 'pro' ? [
       'anthropic/claude-opus-4',
       'x-ai/grok-4'
-    ] : [
+    ] : mode === 'options' ? [
       // OPTIONS mode: specific models for each team
       teamId === 1 ? 'deepseek/deepseek-r1-0528-qwen3-8b:free' :
       teamId === 2 ? 'anthropic/claude-opus-4' :
       teamId === 3 ? 'x-ai/grok-4' :
       'google/gemini-2.5-pro' // Team 4
+    ] : [
+      // ECO mode: DeepSeek R1 for all teams
+      'deepseek/deepseek-r1-0528-qwen3-8b:free'
     ];
     
     console.log('📋 Using models:', models);
@@ -212,7 +215,7 @@ export const OpenRouterService = () => {
     }
   };
 
-  const sendPrompt = async (prompt: string, attachments: FileAttachment[], teamId: TeamId, mode: 'options' | 'pro' | 'max' = 'max'): Promise<string> => {
+  const sendPrompt = async (prompt: string, attachments: FileAttachment[], teamId: TeamId, mode: 'eco' | 'options' | 'pro' | 'max' = 'max'): Promise<string> => {
     const response = await processTeamRequest(prompt, teamId, attachments, mode);
     return response.join('\n\n');
   };
