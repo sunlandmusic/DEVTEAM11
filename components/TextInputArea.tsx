@@ -10,6 +10,11 @@ const Container = styled.div`
   position: relative;
 `;
 
+const InputWrapper = styled.div`
+  position: relative;
+  width: 100%;
+`;
+
 const InputField = styled.textarea<{ $isDisabled: boolean }>`
   width: 100%;
   min-height: 60px;
@@ -124,6 +129,40 @@ const ResponseContent = styled.div`
   word-break: break-word;
 `;
 
+const ClearButton = styled.button`
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  width: 24px;
+  height: 24px;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  opacity: 0.7;
+  z-index: 10;
+  
+  &:hover {
+    background: rgba(255, 255, 255, 0.2);
+    opacity: 1;
+  }
+  
+  &:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+  
+  svg {
+    width: 14px;
+    height: 14px;
+    color: rgba(255, 255, 255, 0.8);
+  }
+`;
+
 export function TextInputArea({ value, onChange, onSend, disabled = false, isTaskMode = false }: TextInputAreaProps) {
   const { responses, clearTeamResponse } = useAutomationStore();
   const teams: TeamId[] = [1, 2, 3, 4];
@@ -164,16 +203,33 @@ export function TextInputArea({ value, onChange, onSend, disabled = false, isTas
     clearTeamResponse(teamId);
   };
 
+  const handleClearInput = () => {
+    onChange('');
+  };
+
   return (
     <Container>
-      <InputField
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        onKeyDown={handleKeyDown}
-        disabled={disabled}
-        placeholder="what's pop'n ?"
-        $isDisabled={disabled}
-      />
+      <InputWrapper>
+        <InputField
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          onKeyDown={handleKeyDown}
+          disabled={disabled}
+          placeholder="what's pop'n ?"
+          $isDisabled={disabled}
+        />
+        {value && !disabled && (
+          <ClearButton
+            onClick={handleClearInput}
+            title="Clear input"
+            disabled={disabled}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+          </ClearButton>
+        )}
+      </InputWrapper>
       
       <ResponseContainer>
         {teams.map(teamId => {
