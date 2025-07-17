@@ -13,6 +13,7 @@ import { TeamResponse, AppState, TeamId } from './types';
 import { LoadingSpinner } from './components/LoadingSpinner';
 import styled from 'styled-components';
 import { FileAttachments } from './components/FileAttachments';
+import { ExportDialog } from './components/ExportDialog';
 import styles from './ResponseDisplay.module.css';
 
 // Add Mode Toggle Switch Component
@@ -509,6 +510,8 @@ const App: React.FC = () => {
   // Add state for three modes
   const [devTeamModelMode, setDevTeamModelMode] = useState<'options' | 'pro' | 'max'>('options');
   const [flipTrigger, setFlipTrigger] = useState(0);
+  // Export dialog state
+  const [showExportDialog, setShowExportDialog] = useState(false);
 
   // --- Aggregated Action Handlers ---
   const handleCopyAllResponses = async () => {
@@ -530,6 +533,10 @@ const App: React.FC = () => {
 
   const handleExportAllResponses = () => {
     if (devTeamResponses.length === 0) return;
+    setShowExportDialog(true);
+  };
+
+  const handleExportWithFilename = (filename: string) => {
     // Replace model HTML header with Markdown heading
     const htmlHeaderRegex = /<span style=\\?"color: #a855f7; font-weight: bold;\\?">(.*?)<\\?\/span>/g;
     const text = devTeamResponses.map((tr: TeamResponse) => {
@@ -537,11 +544,15 @@ const App: React.FC = () => {
       let resp = tr.response.replace(htmlHeaderRegex, (_: string, header: string) => `# ${header}`);
       return `Team ${tr.teamId} Response:\n\n${resp}\n\n`;
     }).join('\n');
+    
+    // Ensure filename has .md extension
+    const finalFilename = filename.endsWith('.md') ? filename : `${filename}.md`;
+    
     const blob = new Blob([text], { type: 'text/plain' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `Team${devTeamResponses.map(tr => tr.teamId).join('_')}_Responses.md`;
+    a.download = finalFilename;
     a.click();
     window.URL.revokeObjectURL(url);
   };
@@ -739,7 +750,8 @@ const App: React.FC = () => {
   // Effect: Auto-download .md and reset UI after all tasks complete in Task Fulfillment mode
   useEffect(() => {
     if (devTeamIsTaskMode && taskQueue.length > 0 && devTeamResponses.length === taskQueue.length) {
-      // Auto-download .md
+      // Auto-download .md with timestamp
+      const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
       const htmlHeaderRegex = /<span style=\"color: #a855f7; font-weight: bold;\">(.*?)<\/?span>/g;
       const text = devTeamResponses.map((tr: TeamResponse) => {
         let resp = tr.response.replace(htmlHeaderRegex, (_: string, header: string) => `# ${header}`);
@@ -749,7 +761,7 @@ const App: React.FC = () => {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `Team${devTeamResponses.map(tr => tr.teamId).join('_')}_Responses.md`;
+      a.download = `TaskResults_${timestamp}.md`;
       a.click();
       window.URL.revokeObjectURL(url);
       // Reset UI
@@ -773,6 +785,9 @@ const App: React.FC = () => {
   const hasTeamsToProcess = devTeamSelectedTeams.some(teamId => !processingStatus.processingTeams.includes(teamId));
   const isSendEnabled = devTeamPrompt.trim() !== '' && hasTeamsToProcess;
   const isInProcessingMode = processingStatus.processingTeams.length > 0;
+  
+  // Generate default filename for export
+  const defaultExportFilename = `Team${devTeamResponses.map(tr => tr.teamId).join('_')}_Responses`;
 
   // Navigation component
   const NavigationTabs = () => (
@@ -1157,6 +1172,14 @@ const App: React.FC = () => {
               </main>
         </div>
       </Container>
+      
+      {/* Export Dialog */}
+      <ExportDialog
+        isOpen={showExportDialog}
+        onClose={() => setShowExportDialog(false)}
+        onExport={handleExportWithFilename}
+        defaultFilename={defaultExportFilename}
+      />
     </>
   );
 };
