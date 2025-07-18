@@ -751,7 +751,7 @@ const App: React.FC = () => {
         if (devTeamIsTaskMode && taskQueue.length > 0) {
           // Multi-Task mode: process all tasks simultaneously
           const timestamp = new Date().toISOString();
-          const TIMEOUT_MS = 2 * 60 * 1000; // 2 minutes
+          const TIMEOUT_MS = 4 * 60 * 1000; // 4 minutes
           
           console.log('🚀 Starting simultaneous processing of', taskQueue.length, 'tasks');
           
