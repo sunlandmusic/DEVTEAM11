@@ -40,6 +40,7 @@ interface AutomationState {
   addAttachment: (name: string) => FileAttachment;
   updateAttachment: (id: string, status: FileAttachment['status'], url?: string, content?: string) => void;
   removeAttachment: (id: string) => void;
+  clearAttachments: () => void;
 
   // Task Queue
   tasks: Task[];
@@ -133,6 +134,9 @@ export const useAutomationStore = create<AutomationState>((set, get) => ({
     set((state) => ({
       attachments: state.attachments.filter((att) => att.id !== id)
     }));
+  },
+  clearAttachments: () => {
+    set({ attachments: [] });
   },
 
   // Task Queue

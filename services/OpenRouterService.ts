@@ -32,14 +32,33 @@ const getModelForTeam = (teamId: TeamId) => {
 
 const attachmentsToString = (attachments: FileAttachment[]) => {
   if (attachments.length === 0) return '';
-  const result = `\nAttached files:\n${attachments.map(a => `- ${a.name} (${a.status})${a.content ? `\nContent (first 1MB):\n${a.content.slice(0, 1024 * 1024)}` : ''}`).join('\n\n')}`;
+  
+  const formattedAttachments = attachments.map(attachment => {
+    if (!attachment.content) {
+      return `\n[File: ${attachment.name} - ERROR: No content loaded]`;
+    }
+    
+    // Add clear delimiters and file type information
+    const fileExtension = attachment.name.split('.').pop()?.toLowerCase();
+    const delimiter = '```';
+    
+    return `
+[File: ${attachment.name}]
+${delimiter}${fileExtension || 'text'}
+${attachment.content.slice(0, 1024 * 1024)}
+${delimiter}
+[End of ${attachment.name}]`;
+  }).join('\n\n');
+  
+  const result = `\n\n--- ATTACHED FILES ---\n${formattedAttachments}\n--- END OF ATTACHED FILES ---\n`;
   console.log('📄 Generated attachments string:', result.substring(0, 200) + '...');
   return result;
 };
 
 export const OpenRouterService = () => {
   const [credits, setCredits] = useState<{ used: number; total: number }>({ used: 0, total: 0 });
-  const abortController = useRef<AbortController | null>(null);
+  const globalAbortController = useRef<AbortController | null>(null);
+  const activeRequests = useRef<Set<AbortController>>(new Set());
 
   const fetchCredits = async () => {
     if (!API_KEY) {
@@ -112,53 +131,87 @@ export const OpenRouterService = () => {
       
       console.log('🔑 API Key found:', API_KEY.substring(0, 10) + '...');
       
-      const responses = await Promise.all(models.map(async (model) => {
-        console.log(`🔄 Making request to model: ${model}`);
-        const requestBody = {
-          model: model,
-          messages: [
-            {
-              role: 'system',
-              content: `Process the following request with expertise and precision.`
-            },
-            {
-              role: 'user',
-              content: prompt + attachmentsToString(attachments)
-            }
-          ]
-        };
+      // Create individual abort controllers for each model request to prevent interference
+      const modelRequests = models.map(async (model, index) => {
+        const requestAbortController = new AbortController();
+        activeRequests.current.add(requestAbortController);
         
-        console.log(`📤 Request body for ${model}:`, JSON.stringify(requestBody, null, 2));
-        
-        const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-          method: 'POST',
-          signal: abortController.current?.signal,
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${API_KEY}`,
-            'HTTP-Referer': 'https://devteam.app',
-            'X-Title': 'DEVTEAM'
-          },
-          body: JSON.stringify(requestBody)
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          console.error('❌ API Error for model', model, ':', {
-            status: response.status,
-            statusText: response.statusText,
-            data: errorData,
-            headers: Object.fromEntries(response.headers.entries())
+        try {
+          console.log(`🔄 Making request to model: ${model} (Team ${teamId})`);
+          
+          // Add delay between requests to prevent rate limiting
+          if (index > 0) {
+            await new Promise(resolve => setTimeout(resolve, 1000 * index));
+          }
+          
+          const requestBody = {
+            model: model,
+            messages: [
+              {
+                role: 'system',
+                content: `Process the following request with expertise and precision.`
+              },
+              {
+                role: 'user',
+                content: prompt + attachmentsToString(attachments)
+              }
+            ]
+          };
+          
+          // Enhanced API Payload Debugging
+          console.log('=== API PAYLOAD DEBUG ===');
+          console.log('Attachments count:', attachments.length);
+          console.log('Attachment details:', attachments.map(a => ({
+            name: a.name,
+            hasContent: !!a.content,
+            contentLength: a.content?.length || 0,
+            contentPreview: a.content?.substring(0, 100)
+          })));
+          console.log('Full message being sent:', requestBody.messages[1].content);
+          console.log('Message length:', requestBody.messages[1].content.length);
+          console.log(`📤 Request body for ${model}:`, JSON.stringify(requestBody, null, 2));
+          console.log(`📊 Payload analysis for ${model}:`, {
+            totalLength: JSON.stringify(requestBody).length,
+            userMessageLength: requestBody.messages[1].content.length,
+            hasAttachments: requestBody.messages[1].content.includes('ATTACHED FILES'),
+            hasContent: requestBody.messages[1].content.includes('```'),
+            attachmentCount: (requestBody.messages[1].content.match(/\[File:/g) || []).length
           });
-          throw new Error(`API call failed for ${model} (${response.status}): ${errorData.error?.message || response.statusText}`);
-        }
+          
+          const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+            method: 'POST',
+            signal: requestAbortController.signal,
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${API_KEY}`,
+              'HTTP-Referer': 'https://devteam.app',
+              'X-Title': 'DEVTEAM'
+            },
+            body: JSON.stringify(requestBody)
+          });
 
-        const data = await response.json();
-        console.log(`✅ Response from ${model}:`, data.choices[0].message.content.substring(0, 100) + '...');
-        let modelName = model.split('/')[1].toUpperCase();
-        if (modelName.startsWith('DEEPSEEK')) modelName = 'DEEPSEEK R1';
-        return `\n\n\n\n<span style=\"color: #a855f7; font-weight: bold;\">${modelName}</span>\n\n\n\n${data.choices[0].message.content}`;
-      }));
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            console.error('❌ API Error for model', model, ':', {
+              status: response.status,
+              statusText: response.statusText,
+              data: errorData,
+              headers: Object.fromEntries(response.headers.entries())
+            });
+            throw new Error(`API call failed for ${model} (${response.status}): ${errorData.error?.message || response.statusText}`);
+          }
+
+          const data = await response.json();
+          console.log(`✅ Response from ${model}:`, data.choices[0].message.content.substring(0, 100) + '...');
+          let modelName = model.split('/')[1].toUpperCase();
+          if (modelName.startsWith('DEEPSEEK')) modelName = 'DEEPSEEK R1';
+          return `\n\n\n\n<span style=\"color: #a855f7; font-weight: bold;\">${modelName}</span>\n\n\n\n${data.choices[0].message.content}`;
+        } finally {
+          activeRequests.current.delete(requestAbortController);
+        }
+      });
+
+      const responses = await Promise.all(modelRequests);
 
       // Update credits after successful request
       setCredits(prev => ({
@@ -209,9 +262,16 @@ export const OpenRouterService = () => {
   };
 
   const cancelRequests = () => {
-    if (abortController.current) {
-      abortController.current.abort();
-      abortController.current = null;
+    // Cancel all active requests
+    activeRequests.current.forEach(controller => {
+      controller.abort();
+    });
+    activeRequests.current.clear();
+    
+    // Also cancel global controller if it exists
+    if (globalAbortController.current) {
+      globalAbortController.current.abort();
+      globalAbortController.current = null;
     }
   };
 

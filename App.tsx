@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './App.css';
 import { SupercomputerIcon } from './components/SupercomputerIcon';
 import { SlotAnimation } from './components/SlotAnimation';
@@ -9,11 +9,12 @@ import { TextInputArea } from './components/TextInputArea';
 
 import { OpenRouterService } from './services/OpenRouterService';
 import { useAutomationStore } from './services/store';
-import { TeamResponse, AppState, TeamId } from './types';
+import { TeamResponse, TeamId } from './types';
 import { LoadingSpinner } from './components/LoadingSpinner';
 import styled from 'styled-components';
 import { FileAttachments } from './components/FileAttachments';
 import { ExportDialog } from './components/ExportDialog';
+import { DebugPanel } from './components/DebugPanel';
 import styles from './ResponseDisplay.module.css';
 
 // Add Mode Toggle Switch Component
@@ -460,7 +461,6 @@ const StartProcessingButton = styled.button<StartProcessingButtonProps>`
 
 const App: React.FC = () => {
   const [taskPrompt, setTaskPrompt] = useState('');
-  const [taskAttachments, setTaskAttachments] = useState<File[]>([]);
   const [taskTeam, setTaskTeam] = useState<TeamId | null>(null);
   const [taskQueue, setTaskQueue] = useState<any[]>([]);
   const { 
@@ -468,6 +468,7 @@ const App: React.FC = () => {
     addAttachment,
     updateAttachment,
     removeAttachment,
+    clearAttachments,
     processingStatus, 
     startTeamProcessing, 
     stopTeamProcessing, 
@@ -597,13 +598,35 @@ const App: React.FC = () => {
     if (e.target.files && e.target.files.length > 0) {
       const selectedFiles = Array.from(e.target.files);
       console.log('📁 Files selected:', selectedFiles.map(f => f.name));
-      console.log('📋 Current taskAttachments before update:', taskAttachments.map(f => f.name));
+      console.log('📋 Current attachments before update:', attachments.map(f => f.name));
       
-      // Use a more explicit state update
-      const newAttachments = [...taskAttachments, ...selectedFiles];
-      console.log('📋 New attachments array:', newAttachments.map(f => f.name));
-      
-      setTaskAttachments(newAttachments);
+      // Process each file and add to global store
+      selectedFiles.forEach(file => {
+        const attachment = addAttachment(file.name);
+        
+        // Read file content with enhanced error handling
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          try {
+            const content = event.target?.result as string;
+            console.log(`✅ File ${file.name} content loaded:`, {
+              name: file.name,
+              contentLength: content.length,
+              hasContent: !!content,
+              preview: content.substring(0, 100) + '...'
+            });
+            updateAttachment(attachment.id, 'success', undefined, content);
+          } catch (error) {
+            console.error(`❌ Error processing file ${file.name}:`, error);
+            updateAttachment(attachment.id, 'error', `Failed to read file: ${(error as Error).message}`);
+          }
+        };
+        reader.onerror = (error) => {
+          console.error(`❌ FileReader error for ${file.name}:`, error);
+          updateAttachment(attachment.id, 'error', 'Failed to read file');
+        };
+        reader.readAsText(file);
+      });
       
       // Clear the input value to allow the same file to be selected again
       e.target.value = '';
@@ -614,21 +637,24 @@ const App: React.FC = () => {
     }
   };
 
-  const handleRemoveAttachment = (idx: number) => {
-    setTaskAttachments(prev => prev.filter((_, i) => i !== idx));
-  };
+
 
   const handleEditTask = (idx: number) => {
     console.log('🔍 handleEditTask called with idx:', idx);
     const task = taskQueue[idx];
     setTaskPrompt(task.prompt);
-    setTaskAttachments(task.attachments);
+    // Load task attachments into global store
+    clearAttachments();
+    task.attachments.forEach((att: any) => {
+      const attachment = addAttachment(att.name);
+      updateAttachment(attachment.id, 'success', att.url, att.content);
+    });
     setTaskTeam(task.team);
     setEditTaskIndex(idx);
   };
 
-  const handleAddTask = () => {
-    console.log('🔍 handleAddTask called with:', { taskPrompt: taskPrompt.trim(), taskTeam, taskAttachmentsCount: taskAttachments.length });
+  const handleAddTask = async () => {
+    console.log('🔍 handleAddTask called with:', { taskPrompt: taskPrompt.trim(), taskTeam, attachmentsCount: attachments.length });
     console.log('🔍 handleAddTask stack trace:', new Error().stack);
     
     if (!taskPrompt.trim() || !taskTeam) {
@@ -642,24 +668,60 @@ const App: React.FC = () => {
       return;
     }
     
+    // Wait for all attachments to be loaded with proper async/await
+    const waitForAttachments = async () => {
+      const maxAttempts = 50; // 5 seconds max
+      let attempts = 0;
+      
+      while (attempts < maxAttempts) {
+        const allLoaded = attachments.every(att => att.content && att.status === 'success');
+        if (allLoaded) {
+          return true;
+        }
+        await new Promise(resolve => setTimeout(resolve, 100));
+        attempts++;
+      }
+      return false;
+    };
+    
+    const attachmentsReady = await waitForAttachments();
+    
+    if (!attachmentsReady) {
+      console.error('❌ Attachments failed to load within timeout');
+      alert('Some files failed to load. Please try uploading them again.');
+      return;
+    }
+    
+    // Deep clone attachments to avoid reference issues
+    const attachmentsCopy = attachments.map(att => ({
+      ...att,
+      content: att.content // Ensure content is copied
+    }));
+    
+    console.log('✅ All attachments have content loaded:', attachmentsCopy.map(att => ({ 
+      name: att.name, 
+      hasContent: !!att.content, 
+      contentLength: att.content?.length || 0 
+    })));
+    
     if (editTaskIndex !== null) {
       setTaskQueue(prev => prev.map((t, i) => i === editTaskIndex ? {
         prompt: taskPrompt,
-        attachments: [...taskAttachments],
+        attachments: attachmentsCopy, // Use cloned attachments
         team: taskTeam
       } : t));
       setEditTaskIndex(null);
       // Only clear after successful edit
       setTaskPrompt('');
-      console.log('🧹 Clearing taskAttachments after successful edit');
-      // TEMPORARILY COMMENTED OUT TO DEBUG: setTaskAttachments([]);
+      console.log('🧹 Clearing attachments after successful edit');
+      clearAttachments(); // Clear global attachments
       setTaskTeam(null);
     } else {
       setTaskQueue(prev => [
         ...prev,
         {
           prompt: taskPrompt,
-          attachments: [...taskAttachments],
+          attachments: attachmentsCopy, // Use cloned attachments
           team: taskTeam
         }
       ]);
@@ -667,8 +729,8 @@ const App: React.FC = () => {
       setDevTeamSelectedTeams(devTeamSelectedTeams.includes(taskTeam) ? devTeamSelectedTeams : [...devTeamSelectedTeams, taskTeam]);
       // Only clear after successful add
       setTaskPrompt('');
-      console.log('🧹 Clearing taskAttachments after successful add');
-      // TEMPORARILY COMMENTED OUT TO DEBUG: setTaskAttachments([]);
+      console.log('🧹 Clearing attachments after successful add');
+      clearAttachments(); // Clear global attachments
       setTaskTeam(null);
     }
   };
@@ -698,9 +760,20 @@ const App: React.FC = () => {
             startTeamProcessing(task.team);
           });
           
-          // Process all tasks simultaneously using Promise.all
+          // Process all tasks with improved error handling and retry logic
           const taskPromises = taskQueue.map(async (task, index) => {
             console.log(`🔄 Starting task ${index + 1}/${taskQueue.length} for Team ${task.team}`);
+            console.log(`📎 Task attachments:`, task.attachments.map((att: any) => ({ 
+              name: att.name, 
+              status: att.status, 
+              hasContent: !!att.content,
+              contentLength: att.content?.length || 0 
+            })));
+            
+            // Add delay between task starts to prevent overwhelming the API
+            if (index > 0) {
+              await new Promise(resolve => setTimeout(resolve, 2000 * index));
+            }
             
             let timedOut = false;
             const timeoutPromise = new Promise((_, reject) =>
@@ -710,44 +783,90 @@ const App: React.FC = () => {
               }, TIMEOUT_MS)
             );
             
-            try {
-              const response = await Promise.race([
-                openRouterService.sendPrompt(
-                  task.prompt,
-                  task.attachments || [],
-                  task.team,
-                  devTeamModelMode
-                ),
-                timeoutPromise
-              ]) as string;
-              
-              addCompletedTeam(task.team);
-              console.log(`✅ Task ${index + 1} completed for Team ${task.team}`);
-              
-              return {
-                teamId: task.team,
-                prompt: task.prompt,
-                response,
-                timestamp,
-                attachments: (task.attachments || []).map((att: any) => att.url).filter(Boolean)
-              };
-            } catch (error) {
-              addError(task.team, error as Error);
-              console.log(`❌ Task ${index + 1} failed for Team ${task.team}:`, error);
-              
-              return {
-                teamId: task.team,
-                prompt: task.prompt,
-                response: timedOut ? 'Error: Timed out after 2 minutes.' : `Error: ${String(error)}`,
-                timestamp,
-                attachments: (task.attachments || []).map((att: any) => att.url).filter(Boolean)
-              };
+            // Retry logic for failed requests
+            const maxRetries = 2;
+            let lastError: Error | null = null;
+            
+            for (let attempt = 1; attempt <= maxRetries + 1; attempt++) {
+              try {
+                console.log(`🔄 Task ${index + 1} for Team ${task.team} - Attempt ${attempt}/${maxRetries + 1}`);
+                
+                const response = await Promise.race([
+                  openRouterService.sendPrompt(
+                    task.prompt,
+                    task.attachments || [],
+                    task.team,
+                    devTeamModelMode
+                  ),
+                  timeoutPromise
+                ]) as string;
+                
+                addCompletedTeam(task.team);
+                console.log(`✅ Task ${index + 1} completed for Team ${task.team} on attempt ${attempt}`);
+                
+                return {
+                  teamId: task.team,
+                  prompt: task.prompt,
+                  response,
+                  timestamp,
+                  attachments: (task.attachments || []).map((att: any) => att.url).filter(Boolean)
+                };
+              } catch (error) {
+                lastError = error as Error;
+                console.log(`❌ Task ${index + 1} for Team ${task.team} failed on attempt ${attempt}:`, error);
+                
+                if (attempt <= maxRetries && !timedOut) {
+                  console.log(`🔄 Retrying task ${index + 1} for Team ${task.team} in 3 seconds...`);
+                  await new Promise(resolve => setTimeout(resolve, 3000));
+                } else {
+                  addError(task.team, error as Error);
+                  console.log(`❌ Task ${index + 1} for Team ${task.team} failed after ${maxRetries + 1} attempts`);
+                  
+                  return {
+                    teamId: task.team,
+                    prompt: task.prompt,
+                    response: timedOut ? 'Error: Timed out after 2 minutes.' : `Error: ${String(error)}`,
+                    timestamp,
+                    attachments: (task.attachments || []).map((att: any) => att.url).filter(Boolean)
+                  };
+                }
+              }
             }
+            
+            // This should never be reached, but just in case
+            return {
+              teamId: task.team,
+              prompt: task.prompt,
+              response: `Error: Failed after ${maxRetries + 1} attempts: ${lastError?.message || 'Unknown error'}`,
+              timestamp,
+              attachments: (task.attachments || []).map((att: any) => att.url).filter(Boolean)
+            };
           });
           
           try {
-            const results = await Promise.all(taskPromises);
-            console.log('🎉 All tasks completed:', results.length);
+            // Process tasks sequentially instead of all at once to prevent API overload
+            console.log('🔄 Processing tasks sequentially to prevent API overload...');
+            const results = [];
+            
+            for (let i = 0; i < taskPromises.length; i++) {
+              try {
+                const result = await taskPromises[i];
+                results.push(result);
+                console.log(`✅ Completed task ${i + 1}/${taskPromises.length}`);
+              } catch (error) {
+                console.error(`❌ Task ${i + 1} failed:`, error);
+                // Add error result to maintain order
+                results.push({
+                  teamId: taskQueue[i].team,
+                  prompt: taskQueue[i].prompt,
+                  response: `Error: ${String(error)}`,
+                  timestamp,
+                  attachments: (taskQueue[i].attachments || []).map((att: any) => att.url).filter(Boolean)
+                });
+              }
+            }
+            
+            console.log('🎉 All tasks processed:', results.length);
             setDevTeamResponses(results);
           } catch (error) {
             console.error('❌ Error in task processing:', error);
@@ -823,10 +942,16 @@ const App: React.FC = () => {
     }
   }, [devTeamPrompt, devTeamIsTaskMode, devTeamSelectedTeams.length, setDevTeamSelectedTeams]);
 
-  // Debug: Monitor taskAttachments state changes
+  // Debug: Monitor attachments state changes
   useEffect(() => {
-    console.log('🔄 taskAttachments state changed:', taskAttachments.map(f => f.name));
-  }, [taskAttachments]);
+    console.log('🔄 attachments state changed:', attachments.map(f => f.name));
+    console.log('📋 Attachment details:', attachments.map(att => ({ 
+      name: att.name, 
+      status: att.status, 
+      hasContent: !!att.content,
+      contentLength: att.content?.length || 0 
+    })));
+  }, [attachments]);
 
   // Calculate if the Send button should be enabled and if we're in processing mode
   const hasTeamsToProcess = devTeamSelectedTeams.some(teamId => !processingStatus.processingTeams.includes(teamId));
@@ -1150,9 +1275,33 @@ const App: React.FC = () => {
                                       if (target.files && target.files.length > 0) {
                                         const selectedFiles = Array.from(target.files);
                                         console.log('📁 Fallback files selected:', selectedFiles.map(f => f.name));
-                                        const newAttachments = [...taskAttachments, ...selectedFiles];
-                                        console.log('📋 Fallback new attachments array:', newAttachments.map(f => f.name));
-                                        setTaskAttachments(newAttachments);
+                                        // Process each file and add to global store
+                                        selectedFiles.forEach(file => {
+                                          const attachment = addAttachment(file.name);
+                                          
+                                          // Read file content
+                                          const reader = new FileReader();
+                                          reader.onload = (event) => {
+                                            try {
+                                              const content = event.target?.result as string;
+                                              console.log(`✅ Fallback file ${file.name} content loaded:`, {
+                                                name: file.name,
+                                                contentLength: content.length,
+                                                hasContent: !!content,
+                                                preview: content.substring(0, 100) + '...'
+                                              });
+                                              updateAttachment(attachment.id, 'success', undefined, content);
+                                            } catch (error) {
+                                              console.error(`❌ Error processing fallback file ${file.name}:`, error);
+                                              updateAttachment(attachment.id, 'error', `Failed to read file: ${(error as Error).message}`);
+                                            }
+                                          };
+                                          reader.onerror = (error) => {
+                                            console.error(`❌ FileReader error for fallback file ${file.name}:`, error);
+                                            updateAttachment(attachment.id, 'error', 'Failed to read file');
+                                          };
+                                          reader.readAsText(file);
+                                        });
                                       }
                                       document.body.removeChild(tempInput);
                                     };
@@ -1163,18 +1312,8 @@ const App: React.FC = () => {
                               >
                                 + Add Attachment
                               </AttachmentButton>
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8, width: '100%' }}>
-                                {taskAttachments.map((file, idx) => (
-                                  <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(0,0,0,0.2)', padding: '4px 8px', borderRadius: 4 }}>
-                                    <span style={{ color: 'white', fontSize: 14 }}>{file.name}</span>
-                                    <button
-                                      onClick={() => handleRemoveAttachment(idx)}
-                                      style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', padding: 4 }}
-                                    >
-                                      ×
-                                    </button>
-                                  </div>
-                                ))}
+                              <div style={{ marginTop: 8, width: '100%' }}>
+                                <FileAttachments />
                               </div>
                             </div>
                             <TeamSelectContainer>
@@ -1220,7 +1359,7 @@ const App: React.FC = () => {
                                 <div style={{ color: '#9333ea', fontWeight: 500, fontSize: 15 }}>Team {task.team}</div>
                                 {task.attachments.length > 0 && (
                                   <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13 }}>
-                                    Attachments: {task.attachments.map((file: File) => file.name).join(', ')}
+                                    Attachments: {task.attachments.map((att: any) => att.name).join(', ')}
                                   </div>
                                 )}
                                 <div style={{ display: 'flex', gap: '8px' }}>
@@ -1300,6 +1439,11 @@ const App: React.FC = () => {
         onExport={handleExportWithFilename}
         defaultFilename={defaultExportFilename}
       />
+      
+      {/* Debug Panel - only show in development */}
+      {process.env.NODE_ENV === 'development' && (
+        <DebugPanel taskQueue={taskQueue} />
+      )}
     </>
   );
 };

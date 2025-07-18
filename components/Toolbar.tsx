@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useRef, useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { TasksButton } from './TasksButton';
 import { useAutomationStore } from '../services/store';
@@ -104,6 +104,11 @@ export function Toolbar({
   setDevTeamPrompt,
   setTaskPrompt // <-- Add this line
 }: ToolbarProps) {
+  
+  // Debug: Track processing state changes
+  useEffect(() => {
+    console.log('🔄 Toolbar processing state changed:', { isProcessing, isTaskMode });
+  }, [isProcessing, isTaskMode]);
   const openRouterService = OpenRouterService();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const settingsButtonRef = useRef<HTMLButtonElement>(null);
@@ -115,6 +120,7 @@ export function Toolbar({
 
   // Add state for prompt dropdown
   const [showPromptDropdown, setShowPromptDropdown] = useState(false);
+  
   const promptOptions = [
     { label: 'Overview', value: 'please develop an overview document from my attached file/s' },
     { label: 'P.R.D.', value: 'please develop a P.R.D. from my attached file/s' },
@@ -124,8 +130,10 @@ export function Toolbar({
     { label: 'Build an Expert', value: 'I want to build a custom A.I. model. It should be able to:\n\n... please help me answer these questions about the model :\n3. Name ?\n4. Description ?\n5. Instructions ?' },
     { label: 'Data Sets', value: 'please help me collect data sets, to build a knowledge base for my attached file/s\n1. make a list of data we need to research, collect and compile.\n2. then break the data acquisition process into stages.' },
     { label: 'Double Check', value: 'My attached file/s act as a knowledge base for my custom A.I. model. please look over the document/s and let me know if it has all the data needed for the model to be highly effective and extremely helpful - please advise.\nIf more data is needed, make a list of specific data needed to fill the gaps. and then make a list of the data acquisition broken up into stages' },
-    { label: 'Collect Data', value: 'please read my attached document. please research, collect data and create data sets for STAGE 1 (mentioned in the document)' },
+    { label: 'Data Collection', value: 'Please go over the documents and give me prompts for each Data Collection Stage. Prompts for the DEV TEAM to work on Data Collection. Include necessary context in the prompt/request and clear instructions so that the DEV TEAM will deliver what is needed' },
   ];
+  
+
 
   return (
     <ToolbarContainer>
@@ -153,11 +161,20 @@ export function Toolbar({
                 // Read file content and update attachment
                 const reader = new FileReader();
                 reader.onload = (event) => {
-                  const content = event.target?.result as string;
-                  console.log(`📁 File "${file.name}" content loaded:`, content.substring(0, 100) + '...');
-                  // Update attachment with content
-                  updateAttachment(attachment.id, 'success', undefined, content);
-                  console.log(`✅ Attachment "${file.name}" updated with content`);
+                  try {
+                    const content = event.target?.result as string;
+                    console.log(`📁 File "${file.name}" content loaded:`, content.substring(0, 100) + '...');
+                    // Update attachment with content
+                    updateAttachment(attachment.id, 'success', undefined, content);
+                    console.log(`✅ Attachment "${file.name}" updated with content`);
+                  } catch (error) {
+                    console.error(`❌ Error processing file "${file.name}":`, error);
+                    updateAttachment(attachment.id, 'error', `Failed to read file: ${(error as Error).message}`);
+                  }
+                };
+                reader.onerror = (error) => {
+                  console.error(`❌ FileReader error for "${file.name}":`, error);
+                  updateAttachment(attachment.id, 'error', 'Failed to read file');
                 };
                 reader.readAsText(file);
               }
@@ -253,8 +270,26 @@ export function Toolbar({
       </TooltipContainer>
 
       <TooltipContainer>
-        <ToolButton onClick={isProcessing ? onStop : onSend} $isDisabled={disabled} $isSend={!isProcessing} $isStop={isProcessing} style={{ backgroundColor: isProcessing ? 'rgba(0, 0, 0, 0.8)' : 'transparent' }}>
-          <img src={StartIcon} alt="Start" style={{ width: 32, height: 32, transform: isProcessing ? 'rotate(180deg)' : 'rotate(22deg)' }} />
+        <ToolButton 
+          onClick={isProcessing ? onStop : onSend} 
+          $isDisabled={disabled} 
+          $isSend={!isProcessing} 
+          $isStop={isProcessing} 
+          style={{ 
+            backgroundColor: isProcessing ? 'rgba(0, 0, 0, 0.8)' : 'transparent',
+            transform: 'none' // Explicitly prevent any transforms
+          }}
+          onMouseEnter={() => console.log('🔍 Start button hover - isProcessing:', isProcessing)}
+        >
+          <img 
+            src={StartIcon} 
+            alt="Start" 
+            style={{ 
+              width: 32, 
+              height: 32,
+              transform: 'none' // Explicitly prevent any transforms on the image
+            }} 
+          />
         </ToolButton>
         <Tooltip>{isProcessing ? 'Stop' : 'Start'}</Tooltip>
       </TooltipContainer>
